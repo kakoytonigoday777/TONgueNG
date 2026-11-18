@@ -72,42 +72,72 @@ START_WORDS = {
     "ru": [
         ("яблоко", "apple"), ("дом", "house"), ("вода", "water"),
         ("книга", "book"), ("друг", "friend"), ("утро", "morning"),
+        ("окно", "window"), ("дорога", "road"), ("мечта", "dream"),
+        ("письмо", "letter"), ("музыка", "music"), ("погода", "weather"),
+        ("солнце", "sun"), ("дождь", "rain"), ("город", "city"),
     ],
     "zh": [
         ("苹果", "яблоко"), ("房子", "дом"), ("水", "вода"),
         ("书", "книга"), ("朋友", "друг"), ("早上", "утро"),
+        ("窗户", "окно"), ("路", "дорога"), ("梦想", "мечта"),
+        ("信", "письмо"), ("音乐", "music"), ("天气", "погода"),
+        ("太阳", "солнце"), ("雨", "дождь"), ("城市", "город"),
     ],
     "ja": [
         ("りんご", "яблоко"), ("家", "дом"), ("水", "вода"),
         ("本", "книга"), ("友達", "друг"), ("朝", "утро"),
+        ("窓", "окно"), ("道", "дорога"), ("夢", "мечта"),
+        ("手紙", "письмо"), ("音楽", "музыка"), ("天気", "погода"),
+        ("太陽", "солнце"), ("雨", "дождь"), ("都市", "город"),
     ],
     "ar": [
         ("تفاحة", "яблоко"), ("بيت", "дом"), ("ماء", "вода"),
         ("كتاب", "книга"), ("صديق", "друг"), ("صباح", "утро"),
+        ("نافذة", "окно"), ("طريق", "дорога"), ("حلم", "мечта"),
+        ("رسالة", "письмо"), ("موسيقى", "музыка"), ("طقس", "погода"),
+        ("شمس", "солнце"), ("مطر", "дождь"), ("مدينة", "город"),
     ],
     "es": [
         ("manzana", "яблоко"), ("casa", "дом"), ("agua", "вода"),
         ("libro", "книга"), ("amigo", "друг"), ("mañana", "утро"),
+        ("ventana", "окно"), ("camino", "дорога"), ("sueño", "мечта"),
+        ("carta", "письмо"), ("música", "музыка"), ("tiempo", "погода"),
+        ("sol", "солнце"), ("lluvia", "дождь"), ("ciudad", "город"),
     ],
     "fr": [
         ("pomme", "яблоко"), ("maison", "дом"), ("eau", "вода"),
         ("livre", "книга"), ("ami", "друг"), ("matin", "утро"),
+        ("fenêtre", "окно"), ("route", "дорога"), ("rêve", "мечта"),
+        ("lettre", "письмо"), ("musique", "музыка"), ("temps", "погода"),
+        ("soleil", "солнце"), ("pluie", "дождь"), ("ville", "город"),
     ],
     "de": [
         ("Apfel", "яблоко"), ("Haus", "дом"), ("Wasser", "вода"),
         ("Buch", "книга"), ("Freund", "друг"), ("Morgen", "утро"),
+        ("Fenster", "окно"), ("Straße", "дорога"), ("Traum", "мечта"),
+        ("Brief", "письмо"), ("Musik", "музыка"), ("Wetter", "погода"),
+        ("Sonne", "солнце"), ("Regen", "дождь"), ("Stadt", "город"),
     ],
     "kk": [
         ("алма", "яблоко"), ("үй", "дом"), ("су", "вода"),
         ("кітап", "книга"), ("дос", "друг"), ("таң", "утро"),
+        ("терезе", "окно"), ("жол", "дорога"), ("арман", "мечта"),
+        ("хат", "письмо"), ("музыка", "музыка"), ("ауа райы", "погода"),
+        ("күн", "солнце"), ("жаңбыр", "дождь"), ("қала", "город"),
     ],
     "hi": [
         ("सेब", "яблоко"), ("घर", "дом"), ("पानी", "вода"),
         ("किताब", "книга"), ("दोस्त", "друг"), ("सुबह", "утро"),
+        ("खिड़की", "окно"), ("सड़क", "дорога"), ("सपना", "мечта"),
+        ("पत्र", "письмо"), ("संगीत", "музыка"), ("मौसम", "погода"),
+        ("सूरज", "солнце"), ("बारिश", "дождь"), ("शहर", "город"),
     ],
     "ko": [
         ("사과", "яблоко"), ("집", "дом"), ("물", "вода"),
         ("책", "книга"), ("친구", "друг"), ("아침", "утро"),
+        ("창문", "окно"), ("길", "дорога"), ("꿈", "мечта"),
+        ("편지", "письмо"), ("음악", "музыка"), ("날씨", "погода"),
+        ("태양", "солнце"), ("비", "дождь"), ("도시", "город"),
     ],
 }
 
@@ -167,6 +197,7 @@ STATE = {
     "correct": 0,        # верных ответов в тренировке
     "feedback": None,    # результат последнего ответа
     "result": None,      # итог завершённой тренировки
+    "flipped": False,    # переворот карточки
 }
 
 
@@ -266,16 +297,25 @@ def level_of(xp):
     return xp // XP_PER_LEVEL + 1
 
 
+def mask_word(word):
+    """Делает подсказку для оборота карточки: 'apple' -> 'a _ _ _ e (5 букв)'."""
+    w = str(word).strip()
+    if len(w) <= 2:
+        return f"{w[0]} _ ({len(w)} букв)"
+    middle = " ".join("_" for _ in w[1:-1])
+    return f"{w[0]} {middle} {w[-1]} ({len(w)} букв)"
+
+
 # =============================================================================
 #  4. ПОЛЬЗОВАТЕЛИ
 # =============================================================================
 def add_start_words(user_id):
-    """Добавляет стартовые слова по всем поддерживаемым языкам."""
+    """Добавляет стартовые слова по всем языкам (пропускает уже существующие)."""
     for lang, pairs in START_WORDS.items():
         for word, translation in pairs:
             execute_query(
                 "INSERT INTO words (user_id, word, translation, lang) "
-                "VALUES (%s, %s, %s, %s)",
+                "VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING",
                 (user_id, word, translation, lang),
             )
 
@@ -325,6 +365,7 @@ def guest_user():
         fetch=True,
     )
     if rows:
+        add_start_words(rows[0]["id"])
         return rows[0]
 
     rows = execute_query(
@@ -1046,10 +1087,16 @@ def show_question(page):
     total = len(STATE["questions"])
     mode = STATE["mode"]
     feedback = STATE["feedback"]
+    is_flipped = STATE.get("flipped", False)
 
     def finish(e):
-        STATE.update(questions=[], feedback=None, result=None)
+        STATE.update(questions=[], feedback=None, result=None, flipped=False)
         go_to(page, "training")
+
+    def toggle_flip(e):
+        if mode == "cards" and feedback is None:
+            STATE["flipped"] = not is_flipped
+            go_to(page, "training")
 
     header = ft.Row(
         [
@@ -1063,17 +1110,37 @@ def show_question(page):
         value=STATE["index"] / total, bar_height=6, border_radius=4,
         color=ACCENT, bgcolor="#2A3157",
     )
-    prompt = card(
-        ft.Column(
-            [
-                t(MODES[mode], 10, MUTED),
-                t(question["prompt"], 26, TEXT, ft.FontWeight.BOLD),
-            ],
-            spacing=4,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        ),
-        padding=22,
-    )
+
+    # Оформление карточки: в режиме cards её можно нажать, чтобы увидеть подсказку
+    if mode == "cards":
+        card_title = "ПОДСКАЗКА (нажмите, чтобы вернуть)" if is_flipped else "КАРТОЧКА (нажмите для подсказки)"
+        card_text = mask_word(question["answer"]) if is_flipped else question["prompt"]
+        card_bg = "#252D59" if is_flipped else CARD
+        prompt = card(
+            ft.Column(
+                [
+                    t(card_title, 10, ACCENT if is_flipped else MUTED),
+                    t(card_text, 26, TEXT, ft.FontWeight.BOLD),
+                ],
+                spacing=6,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            bgcolor=card_bg,
+            padding=24,
+            on_click=toggle_flip if feedback is None else None,
+        )
+    else:
+        prompt = card(
+            ft.Column(
+                [
+                    t(MODES[mode], 10, MUTED),
+                    t(question["prompt"], 26, TEXT, ft.FontWeight.BOLD),
+                ],
+                spacing=4,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            padding=22,
+        )
 
     if feedback is not None:
         color = GREEN if feedback["is_right"] else RED
@@ -1149,9 +1216,13 @@ def submit_answer(page, value):
     is_right = text != "" and text == normalize(question["answer"])
 
     update_word_progress(question["word_id"], is_right)
-    gain = 10 if is_right else 0
     if is_right:
+        # Если в режиме карточек использовали подсказку, даём 5 XP вместо 10 XP
+        gain = 5 if (STATE["mode"] == "cards" and STATE.get("flipped")) else 10
         STATE["correct"] += 1
+    else:
+        gain = 0
+
     STATE["user"]["xp"] = add_xp(STATE["user"]["id"], gain)
     STATE["feedback"] = {"is_right": is_right, "xp": gain}
     go_to(page, "training")
@@ -1161,6 +1232,7 @@ def next_question(page):
     """Следующий вопрос или завершение тренировки."""
     STATE["index"] += 1
     STATE["feedback"] = None
+    STATE["flipped"] = False
 
     if STATE["index"] >= len(STATE["questions"]):
         user_id = STATE["user"]["id"]
