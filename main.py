@@ -16,10 +16,10 @@ import psycopg2
 # -----------------------------------------------------------------------------
 #  1. НАСТРОЙКИ — при необходимости измените под себя
 # -----------------------------------------------------------------------------
-DB_HOST = "localhost"
+DB_HOST = "ep-autumn-lake-ba3tm4kh.c-8.eu-central-1.aws.neon.tech"
 DB_PORT = 5432
-DB_USER = "postgres"
-DB_PASSWORD = "Connor1029"     # <-- укажите свой пароль PostgreSQL
+DB_USER = "neondb_owner"
+DB_PASSWORD = "npg_RhTYobDiHs76"     # <-- укажите свой пароль PostgreSQL
 DB_NAME = "tongue_ng"
 
 XP_PER_LEVEL = 100           # сколько XP нужно на новый уровень
@@ -212,6 +212,7 @@ def connect_to_db(dbname=None):
         user=DB_USER,
         password=DB_PASSWORD,
         dbname=dbname or DB_NAME,
+        sslmode="require",
         connect_timeout=5,
     )
 
